@@ -37,7 +37,13 @@ Don't rename it back (nothing scary happens if you will, it will just rename its
 
 ...........................................................................
 
-FOR CODERS:
+ADDITIONAL INFO:
+
+This patch can be used on Nvidia, however it will have no effect.
+
+...........................................................................
+
+FOR PROGRAMMERS:
 
 Source code of dummy 'opengl32.dll' is provided in 'amd_patch/src' folder.
 
