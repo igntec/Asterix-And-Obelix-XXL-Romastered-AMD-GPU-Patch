@@ -1,0 +1,266 @@
+#version 400
+#define SH_LINEAR_FOG
+#define SH_PARTICLE
+#define SH_SHADOW0 0
+#define SH_SHADOW1 0
+#define SH_SHADOW2 0
+#define SH_SHADOW3 0
+#define SH_SHADOWQUALITY 1
+#define SH_LIGHTS 6
+#define SH_LIGHT0 0
+#define SH_LIGHT1 0
+#define SH_LIGHT2 0
+#define SH_LIGHT3 0
+#define O_GLSL 1
+#define GENERATOR_VERSION 4
+#define IN_PARAM_u_diffuse
+#define IN_PARAM_u_diffuse_TYPE_sampler2D
+#define IN_PARAM_CONNECTED_u_diffuse
+#define IN_PARAM_inUVs
+#define IN_PARAM_inUVs_TYPE_float2
+#define IN_PARAM_CONNECTED_inUVs
+#define IN_PARAM_u_color
+#define IN_PARAM_u_color_TYPE_float4
+#define IN_PARAM_CONNECTED_u_color
+#define IN_PARAM_u_contrast
+#define IN_PARAM_u_contrast_TYPE_float
+#define IN_PARAM_CONNECTED_u_contrast
+#define IN_PARAM_inColor
+#define IN_PARAM_inColor_TYPE_float4
+#define IN_PARAM_CONNECTED_inColor
+#define IN_PARAM_u_opacite
+#define IN_PARAM_u_opacite_TYPE_float
+#define IN_PARAM_CONNECTED_u_opacite
+#define OUT_PARAM_outDiffuse
+#define OUT_PARAM_outDiffuse_TYPE_float4
+#define OUT_PARAM_CONNECTED_outDiffuse
+#define OUT_PARAM_outAlpha
+#define OUT_PARAM_outAlpha_TYPE_float
+#define OUT_PARAM_CONNECTED_outAlpha
+#define PI 3.1415926535897932384626433832795
+#define INVPI 0.31830988618379067153776752674503
+#define TAU 6.28318531
+#define SH_IS_BLIND0
+#define SH_IS_UV2S
+#define P_HIGHP highp
+#define P_MEDP mediump
+#define P_LOWP lowp
+#define oTextureQueryLod( texture, uv) textureQueryLod( texture, uv).y
+#define VXSHADER_IN in
+#define VXSHADER_OUT out
+#define PXSHADER_IN in
+#define PXSHADER_OUT out
+#define DECLARE_PXSHADER_OUTPUT out vec4 fragOutColor; out vec4 fragOutColor2; out vec4 fragOutColor3; out vec4 fragOutColor4;
+#define SHADERFLAG_NOPRESP noperspective
+#define tex2D(_texture, uv) texture(_texture, uv)
+#define texShadow(_texture, uv) texture(_texture, uv)
+#define tex2DlodUvw(_texture, uv) textureLod(_texture, uv.xy, uv.w)
+#define tex2Dlod(_texture, uv, lod) textureLod(_texture, uv.xy, lod)
+#define tex2Dproj(_texture, uv) textureProj(_texture, uv)
+#define PX_SHADER_OUTPUT(name)	name	
+#define DECLARE_SIMPLE_MAIN_POSTFX_START PXSHADER_IN float2 vxUv; void main() { float2 inTexCoord = vxUv;
+#define DECLARE_SIMPLE_MAIN_POSTFX_MRT2_START PXSHADER_IN float2 vxUv; void main() { float2 inTexCoord = vxUv;
+#define DECLARE_SIMPLE_MAIN_POSTFX_MRT3_START PXSHADER_IN float2 vxUv; void main() { float2 inTexCoord = vxUv;
+#define DECLARE_SIMPLE_MAIN_POSTFX_END }
+#define DECLARE_SIMPLE_MAIN_POSTFX_MRT2_END }
+#define DECLARE_SIMPLE_MAIN_POSTFX_MRT3_END }
+#define STATIC_CONST const 
+#define O_DECLARE_TEX(a_TexName) uniform sampler2D a_TexName;
+#define O_DECLARE_TEX_SHADOW(a_TexName) uniform sampler2DShadow a_TexName;
+#define O_DECLARE_TEX_CUBE(a_TexName) uniform samplerCube a_TexName;
+#define O_PARAM_TEX(a_TexName) a_TexName
+#define O_PARAM_TEX_SHADOW(a_TexName) a_TexName
+#define O_PARAM_TEX_CUBE(a_TexName) a_TexName
+#define O_PARAM_TEX_DECLARE(a_TexName) const sampler2D a_TexName
+#define O_PARAM_TEX_SHADOW_DECLARE(a_TexName) const sampler2DShadow a_TexName
+#define O_PARAM_TEX_CUBE_DECLARE(a_TexName) const samplerCube a_TexName
+#define TEX_GET_DIMENSIONS(tex,X,Y) {ivec2 iv=textureSize(tex,0); X=iv.x;Y=iv.y;}
+#define BEGIN_CONSTANT_BUFFER_IDX(name,idx)
+#define BEGIN_HLSL_CONSTANT_BUFFER(name)
+#define BEGIN_CONSTANT_BUFFER(name)
+#define END_CONSTANT_BUFFER
+#define END_HLSL_CONSTANT_BUFFER
+#define CB_ENTRY uniform
+#define CONSTANT_BUFFER_PAD(type,name)
+#define SV_TARGET0 COLOR
+#define float4 vec4
+#define float3 vec3
+#define float2 vec2
+#define float4x4 mat4
+#define float3x3 mat3
+#define float2x2 mat2
+#define frac fract
+#define lerp mix
+#define mul(_x_, _y_) (_x_ * _y_)
+#define saturate(_x_) clamp(_x_,0.0,1.0)
+#define texCoord inUVs
+#define texCoord2 inUV2s
+#define color inColor
+#define tangent inTangent
+#define EXTRA_INSTANCE_PARAMS
+#define INPUT_VERTEX_PARAMS  in float4 position : POSITION, in float4 color : COLOR, in float4 texCoord : TEXCOORD0, in float4 normal : NORMAL EXTRA_INSTANCE_PARAMS 
+#define InputVx(param) param
+float3 UserCustomizeOutLighting(float3 lightTotal)
+{
+return lightTotal.xyz;
+}
+BEGIN_HLSL_CONSTANT_BUFFER(viewpos)
+CB_ENTRY float3 viewPos;
+CB_ENTRY float2 f2FogNearInvRange;
+CB_ENTRY float4 f4FogColor;
+END_HLSL_CONSTANT_BUFFER
+float4 ComputeFogSq(float4 color, float zSqDist, float amount)
+{
+float4 outColor = color;
+float fFogNear = f2FogNearInvRange.x;
+float fFogInvRange = f2FogNearInvRange.y;
+float fFog = saturate((zSqDist - fFogNear*fFogNear) * fFogInvRange * fFogInvRange * amount);
+outColor.xyz = mix(outColor.xyz, f4FogColor.xyz, fFog * f4FogColor.a);
+return 	outColor;
+}
+float4 ComputeFog(float4 color, float zDist)
+{
+float4 outColor = color;
+float fFogNear = f2FogNearInvRange.x;
+float fFogInvRange = f2FogNearInvRange.y;
+float fFog = saturate((zDist - fFogNear) * fFogInvRange);
+outColor.xyz = mix(outColor.xyz, f4FogColor.xyz, fFog);
+return 	outColor;
+}
+void DiscardIfAlphaTransparent(float4 color) {}
+struct ComputeLightingParams
+{
+float4 worldPosition;
+float4 worldNormal;
+float4 diffuseColor;
+float4 specularColor;
+float4 normalMapColor;
+float3 tangent;
+float2 uvs;
+float2 uv2s;
+float SpecPower;
+};
+float4 ComputeLighting(in ComputeLightingParams a_params) { return a_params.diffuseColor; }
+PXSHADER_IN vec4 vxColor;
+PXSHADER_IN vec4 vxNormal;
+PXSHADER_IN vec4 vxWorldPos;
+SHADERFLAG_NOPRESP PXSHADER_IN vec4 vxLocalPos;
+PXSHADER_IN vec4 vxTangent;
+PXSHADER_IN vec4 vxBinormal;
+PXSHADER_IN vec2 vxUv;
+DECLARE_PXSHADER_OUTPUT 
+void Node1TexColor(O_PARAM_TEX_DECLARE(inTexture), in float2 inUvs, out float4 Result)
+{
+Result = tex2D(inTexture, inUvs);
+}
+void Node2explodecolor(in float4 In, out float R, out float G, out float B, out float A)
+{
+R = In.r;
+G = In.g;
+B = In.b;
+A = In.a;
+}
+void Node3implodecolor(in float R, in float G, in float B, in float A, out float4 Out)
+{
+Out = float4(R, G, B, A);
+}
+void Node4mulcolor(in float4 V1, in float4 V2, out float4 Mul)
+{
+Mul = V1 * V2;
+}
+void Node5explodecolor(in float4 In, out float R, out float G, out float B, out float A)
+{
+R = In.r;
+G = In.g;
+B = In.b;
+A = In.a;
+}
+void Node6inversefloat(in float In, out float Out)
+{
+Out = (1.0-In);
+}
+void Node7subfloat(in float V, in float Minus, out float Result)
+{
+Result = V - Minus;
+}
+void Node8mulfloat(in float V1, in float V2, out float Mul)
+{
+Mul = V1 * V2;
+}
+void Node9floatsaturate(in float Value, out float Output)
+{
+Output = saturate(Value);
+}
+void Node10floatsaturate(in float Value, out float Output)
+{
+Output = saturate(Value);
+}
+void Node11mulfloat(in float V1, in float V2, out float Mul)
+{
+Mul = V1 * V2;
+}
+void Node12(O_PARAM_TEX_DECLARE(u_diffuse), in float2 inUVs, in float4 u_color, in float u_contrast, in float4 inColor, in float u_opacite, out float4 outDiffuse, out float outAlpha)
+{
+float Node5explodecolor_R;
+float Node5explodecolor_G;
+float Node5explodecolor_B;
+float Node5explodecolor_A;
+Node5explodecolor(inColor, Node5explodecolor_R, Node5explodecolor_G, Node5explodecolor_B, Node5explodecolor_A);
+float Node6inversefloat_Out;
+Node6inversefloat(Node5explodecolor_A, Node6inversefloat_Out);
+float4 Node1TexColor_Result;
+Node1TexColor(O_PARAM_TEX(u_diffuse), inUVs, Node1TexColor_Result);
+float Node2explodecolor_R;
+float Node2explodecolor_G;
+float Node2explodecolor_B;
+float Node2explodecolor_A;
+Node2explodecolor(Node1TexColor_Result, Node2explodecolor_R, Node2explodecolor_G, Node2explodecolor_B, Node2explodecolor_A);
+float Node7subfloat_Result;
+Node7subfloat(Node2explodecolor_A, Node6inversefloat_Out, Node7subfloat_Result);
+float Node11mulfloat_Mul;
+Node11mulfloat(Node7subfloat_Result, u_contrast, Node11mulfloat_Mul);
+float Node9floatsaturate_Output;
+Node9floatsaturate(u_opacite, Node9floatsaturate_Output);
+float Node10floatsaturate_Output;
+Node10floatsaturate(Node11mulfloat_Mul, Node10floatsaturate_Output);
+float4 Node3implodecolor_Out;
+Node3implodecolor(Node2explodecolor_R, Node2explodecolor_G, Node2explodecolor_B, float(0.000000), Node3implodecolor_Out);
+float4 Node4mulcolor_Mul;
+Node4mulcolor(Node3implodecolor_Out, u_color, Node4mulcolor_Mul);
+float Node8mulfloat_Mul;
+Node8mulfloat(Node10floatsaturate_Output, Node9floatsaturate_Output, Node8mulfloat_Mul);
+outDiffuse = float4(Node4mulcolor_Mul);
+outAlpha = float(Node8mulfloat_Mul);
+}
+BEGIN_HLSL_CONSTANT_BUFFER(ParamsIn)
+CB_ENTRY float4 u_color;
+CB_ENTRY float u_contrast;
+CB_ENTRY float u_opacite;
+float nNull; 
+END_HLSL_CONSTANT_BUFFER
+O_DECLARE_TEX( u_diffuse )
+void main()  
+{
+float2 inUVs 		= vxUv.xy;
+float3 inWorldPos 	= vxWorldPos.xyz;
+float4 inColor 		= vxColor;
+float3 inNormal3 	= normalize(vxNormal.xyz);
+float3 inLocalPos 	= vxLocalPos.xyz;
+float3 inTangent3 	= normalize(vxTangent.xyz);
+
+//remove this line
+//float3 inBinormal3 	= vxBinormal.xyz;
+
+float4 diffuseColor;
+float outAlpha;
+Node12(O_PARAM_TEX(u_diffuse), inUVs, u_color, u_contrast, inColor, u_opacite
+, diffuseColor
+, outAlpha
+);
+float4 outColor;
+outColor = diffuseColor;
+outColor.a = outAlpha;
+float3 vAtDir = viewPos-inWorldPos;
+float sqDist = dot(vAtDir, vAtDir);
+fragOutColor = ComputeFogSq(outColor, sqDist, 1.0);
+}
