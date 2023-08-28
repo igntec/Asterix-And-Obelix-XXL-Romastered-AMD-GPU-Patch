@@ -27,7 +27,7 @@ It might not work with another version of the game.
 
 INSTALLATION:
 
-Copy content of 'amd_patch/bin' folder to game installation folder. Content of 'amd_patch/bin' folder:
+Copy content of 'bin' folder to game installation folder. Content of 'bin' folder:
 1. opengl32.dll library
 2. shaders folder
 
@@ -45,6 +45,6 @@ This patch can be used on Nvidia, however it will have no effect.
 
 FOR PROGRAMMERS:
 
-Source code of dummy 'opengl32.dll' is provided in 'amd_patch/src' folder.
+Source code of dummy 'opengl32.dll' is provided in 'src' folder.
 
 ...........................................................................
